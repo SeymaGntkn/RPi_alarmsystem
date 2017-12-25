@@ -1,0 +1,90 @@
+#!/usr/bin/python
+import RPi.GPIO as GPIO
+import time
+import smtplib
+import os, sys, time
+import os
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEImage import MIMEImage
+from email.MIMEText import MIMEText
+from email.Utils import COMMASPACE, formatdate
+from email import Encoders
+import picamera
+import subprocess
+def blink(pin):
+GPIO.output(pin, GPIO.HIGH)
+time.sleep(1)
+GPIO.output(pin, GPIO.LOW)
+time.sleep(1)
+return
+def sendEmail():
+camera = picamera.PiCamera()
+camera.resolution = (1920, 1080)
+
+# time.sleep(2)
+camera.capture('image1.jpg')
+camera.close()
+username = "" # you need yo write your mail adress or a
+username
+password = "" # your e mail password
+COMMASPACE = ','
+message = MIMEMultipart()
+message['Subject'] = 'Motion Detected'
+me = 'example@gmail.com' # your e mail adress again
+receivers= 'example@gmail.com' # your e mail adress again
+message['From'] = me
+message['To'] = COMMASPACE.join(receivers)
+message.preamble = 'Movement'
+fp = open('image1.jpg', 'rb').read()
+img = MIMEImage(fp, name=os.path.basename('image1.jpg'))
+
+message.attach(img)
+try:
+server = smtplib.SMTP("smtp.gmail.com", 587) # you need to change your
+port mail service provider.
+server.ehlo()
+server.starttls()
+server.login(username,password)
+server.sendmail(me, receivers, message.as_string())
+server.close()
+print 'Mail sent.'
+except:
+print "Mail could not be sent."
+GPIO.setmode(GPIO.BCM)
+GPIO_PIR = 7
+print "Motion module being tested...(CTRL-C to exit)"
+GPIO.setup(GPIO_PIR,GPIO.IN) # Echo
+GPIO.setup(17,GPIO.OUT)
+Current_State = 0
+Previous_State = 0
+try:
+print "Motion sensor ready to work ..."
+while GPIO.input(GPIO_PIR)==1:
+Current_State = 0
+print " Ready"
+
+while True :
+
+# The operation algorithm of the PIR sensor
+Current_State = GPIO.input(GPIO_PIR)
+
+if Current_State==1 and Previous_State==0:
+
+print " Motion detected!"
+blink(17)
+sendEmail()
+
+
+Previous_State=1
+elif Current_State==0 and Previous_State==1:
+print " Ready"
+Previous_State=0
+
+time.sleep(0.01)
+
+except KeyboardInterrupt:
+print " Exit"
+GPIO.cleanup()
